@@ -1,72 +1,75 @@
-#include <stdio.h>
+#include  <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
+#include <search.h>
 
-typedef void void_sex;
+typedef void      void_sex;
 typedef size_t vova_bebrin;
 
-vova_bebrin bubble_sort(vova_bebrin quantity,  char** ptr_buffer);
-int str_sort(vova_bebrin quantity, const char* onegin[]);
-void_sex append(char** buffer_onegin, vova_bebrin* ar_length, char new_elem);
 vova_bebrin size_of_file(FILE* file_onegin);
-vova_bebrin quantity(char* buffer_onegin, vova_bebrin len_onegin);
-void_sex ptr_buffer(vova_bebrin onegin_size, char* buffer_onegin, char** ptr_array);
+int         str_sort(vova_bebrin quantity, const char* onegin[]);
+vova_bebrin bubble_sort(vova_bebrin quantity,  char** ptr_buffer);
+vova_bebrin number_of_strings(char* buffer_onegin, vova_bebrin len_onegin);
+// void_sex    append(char** buffer_onegin, vova_bebrin* ar_length, char new_elem);
+void_sex    ptr_buffer(vova_bebrin onegin_size, char* buffer_onegin, char** ptr_array);
+vova_bebrin read_from_file(char* buffer_onegin, size_t onegin_size, FILE* file_onegin);
+void_sex    print(vova_bebrin number_of_strs, char** ptr_array, FILE* file_sorted_onegin);
 
 //===================================== MAIN ========================================
 
-int main()
-{
-    FILE* file_onegin = fopen("Evgeniy.txt", "r");
-    assert(file_onegin != NULL);
-
-    vova_bebrin onegin_size = size_of_file(file_onegin);
-    // printf("onegin size: %lu\n", onegin_size);
-
-    char* buffer_onegin = (char*)calloc(onegin_size + 1, sizeof(char));
-    assert(buffer_onegin != NULL);
-
-    assert(file_onegin != NULL);
-    fread(buffer_onegin,
-          sizeof(char),
-          onegin_size,
-          file_onegin);
-    // perror("read failure");
-    // printf("readed: %lu\n", readed);
-
-    buffer_onegin[onegin_size] = '\0';
-
-    vova_bebrin number_of_strs = quantity(buffer_onegin, onegin_size);
-
-    char** ptr_array = (char**)calloc(number_of_strs, sizeof(char*));
-    assert(ptr_array != NULL);
-
-    // разными схемами расставить указатели в буффер
-
-    ptr_buffer(onegin_size, buffer_onegin, ptr_array);
-    // for (size_t i = 0; i < number_of_strs; i++) {
-    //     fprintf(stderr, "ptr[%lu]: %p\n", i, ptr_array[i]);
-    // }
-
-    vova_bebrin swaped_in_sort = bubble_sort(number_of_strs, ptr_array);
-    // fprintf(stderr, "swapped in sort: %lu\n", swaped_in_sort);
-
-    // for (vova_bebrin k = 0; k < onegin_size; k++)
-    // {
-    //     printf("%c", buffer_onegin[k]);
-    //     if (buffer_onegin[k] == '\0') {
-    //         putchar('\n');
-    //     }
-    // }
-
-    for (vova_bebrin k = 0; k < number_of_strs; k++)
-    {
-        printf("%s\n", ptr_array[k]);
+int main(int argc, char* argv[]) {
+    if (argc < 3) {
+        fprintf(stderr, "Erorr: no file given, expected name of file!\n");
+        return EXIT_FAILURE;
     }
 
-    free(buffer_onegin);
+    const char* argv_file = argv[1];
+    const char* argv_sorted_file = argv[2];
+
+    FILE*  file_onegin = fopen(argv_file, "r");
+    if (file_onegin == NULL) {
+        fprintf(stderr, "Error: file cannot be opended\n");
+        return EXIT_FAILURE;
+    }
+
+    vova_bebrin onegin_size = size_of_file(file_onegin);
+
+    char* buffer_onegin = (char*)calloc(onegin_size + 1, sizeof(char));
+    if (buffer_onegin == NULL) {
+        fprintf(stderr, "Error: buffer cannot be allocated. \n");
+        return EXIT_FAILURE;
+    }
+
+    read_from_file(buffer_onegin, onegin_size, file_onegin);
+
+    if (fclose(file_onegin) == EOF){
+        fprintf(stderr, "Error: the file %s cannot be closed. \n ", argv_file);
+        return EXIT_FAILURE;
+    }
+
+    vova_bebrin number_of_strs = number_of_strings(buffer_onegin, onegin_size);
+
+    char** ptr_array = (char**)calloc(number_of_strs, sizeof(char*));
+    if (ptr_array == NULL) {
+        fprintf(stderr, "Error: ptr_array cannot be alocated.\n");
+        return EXIT_FAILURE;
+    }
+
+    ptr_buffer(onegin_size, buffer_onegin, ptr_array);
+
+    bubble_sort(number_of_strs, ptr_array);
+    FILE*  file_sorted_onegin = fopen(argv_sorted_file, "w");
+    if (file_sorted_onegin == NULL) {
+        fprintf(stderr, "Error: file_sorted_onegin cannot be opened. \n");
+        return EXIT_FAILURE;
+    }
+
+    print(number_of_strs, ptr_array, file_sorted_onegin);
+
+
     free(ptr_array);
-    fclose(file_onegin);
+    free(buffer_onegin);
 }
 
 //==================================== END OF MAIN =========================================
@@ -75,21 +78,17 @@ int main()
 //------------------------------------ BUBBLE SORT -----------------------------------------
 
 
-
-vova_bebrin bubble_sort(vova_bebrin quantity,  char** ptr_buffer)
-{
+vova_bebrin bubble_sort(vova_bebrin quantity,  char** ptr_buffer) {
     assert(ptr_buffer != NULL);
 
     vova_bebrin counter = 0;
 
-    for (vova_bebrin i = 0; i < quantity - 1; i++)
-    {
-        for (vova_bebrin j = 0; j < quantity - i - 1; j++)
-        {
+    for (vova_bebrin i = 0; i < quantity - 1; i++) {
+        for (vova_bebrin j = 0; j < quantity - i - 1; j++) {
             // fprintf(stderr, "j: %lu ptr_buffer[j]: %p ptr_buffer[j + 1]: %p\n", j, ptr_buffer[j], ptr_buffer[j + 1]);
             //if (strlen(ptr_buffer[j]) > strlen(ptr_buffer[j + 1]))
-            if (strcmp(ptr_buffer[j], ptr_buffer[j+1]) > 0)
-            {
+
+            if (strcmp(ptr_buffer[j], ptr_buffer[j+1]) > 0) {
                 char* min_ptr = ptr_buffer[j];
                                 ptr_buffer[j] = ptr_buffer[j + 1];
                                                 ptr_buffer[j + 1] = min_ptr;
@@ -105,16 +104,12 @@ vova_bebrin bubble_sort(vova_bebrin quantity,  char** ptr_buffer)
 //------------------------------------ LENGTH SORT -----------------------------------------
 
 
-int str_sort(vova_bebrin quantity, const char* onegin[])
-{
+int str_sort(vova_bebrin quantity, const char* onegin[]) {
     int counter_v2 = 0;
 
-    for (vova_bebrin i = 0; i < quantity - 1; i++)
-    {
-        for (vova_bebrin j = 0; j < quantity - i - 1; j++)
-        {
-            if (strlen(onegin[j]) > strlen(onegin[j + 1]))
-            {
+    for (vova_bebrin i = 0; i < quantity - 1; i++) {
+        for (vova_bebrin j = 0; j < quantity - i - 1; j++) {
+            if (strlen(onegin[j]) > strlen(onegin[j + 1])) {
                 const char* min_len_str = onegin[j];
                                           onegin[j] = onegin[j + 1];
                                                       onegin[j + 1] = min_len_str;
@@ -130,18 +125,15 @@ int str_sort(vova_bebrin quantity, const char* onegin[])
 //----------------------------------- APPEND ------------------------------------------
 
 
-void_sex append(char** buffer_onegin, vova_bebrin* ar_length, char new_elem)
-{
-    *buffer_onegin = (char*) realloc(*buffer_onegin, 1 + *ar_length);
-    (*buffer_onegin)[*ar_length] = new_elem;
-    *ar_length += 1;
-    //return
-}
+// void_sex append(char** buffer_onegin, vova_bebrin* ar_length, char new_elem) {
+//     *buffer_onegin = (char*) realloc(*buffer_onegin, 1 + *ar_length);
+//     (*buffer_onegin)[*ar_length] = new_elem;
+//  s   *ar_length += 1;
+// }
 
 //------------------------- FUNC TO CALC SIZE OF A FILE -------------------------------
 
-vova_bebrin size_of_file(FILE* file_onegin)
-{
+vova_bebrin size_of_file(FILE* file_onegin) {
     assert(file_onegin != NULL);
 
     fseek(file_onegin, 0L, SEEK_END);
@@ -153,8 +145,7 @@ vova_bebrin size_of_file(FILE* file_onegin)
 
 //------------------------ FUNC TO CALC NUMBER OF STRINGS -----------------------------
 
-vova_bebrin quantity(char* buffer_onegin, vova_bebrin len_onegin)
-{
+vova_bebrin number_of_strings(char* buffer_onegin, vova_bebrin len_onegin) {
     assert(buffer_onegin != NULL);
 
     vova_bebrin counter = 0;
@@ -170,6 +161,8 @@ vova_bebrin quantity(char* buffer_onegin, vova_bebrin len_onegin)
 
     return counter;
 }
+
+//--------------------------- FUNC TO FILL PTR BUFFER ---------------------------------
 
 void_sex ptr_buffer(vova_bebrin onegin_size, char* buffer_onegin, char** ptr_array) {
     int counter = 0;
@@ -187,3 +180,28 @@ void_sex ptr_buffer(vova_bebrin onegin_size, char* buffer_onegin, char** ptr_arr
         }
     }
 }
+
+//------------------------------------ BUFFER -----------------------------------------
+
+vova_bebrin read_from_file(char* buffer_onegin, size_t onegin_size, FILE* file_onegin) {
+    assert(file_onegin != NULL);
+    assert(buffer_onegin != NULL);
+
+    vova_bebrin fread_readed = fread(buffer_onegin,
+                                     sizeof(char),
+                                     onegin_size,
+                                     file_onegin);
+    buffer_onegin[onegin_size] = '\0';
+    return fread_readed;
+}
+
+//------------------------------------- PRINT -----------------------------------------
+
+void_sex print(vova_bebrin number_of_strs, char** ptr_array, FILE* file_sorted_onegin) {
+    for (vova_bebrin k = 0; k < number_of_strs; k++) {
+        fprintf(file_sorted_onegin, "%s\n", ptr_array[k]);
+    }
+}
+
+//------------------------------------ STRCMP -----------------------------------------
+
