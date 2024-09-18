@@ -1,4 +1,5 @@
 #include  <stdio.h>
+#include  <ctype.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
@@ -7,7 +8,16 @@
 typedef void      void_sex;
 typedef size_t vova_bebrin;
 
+typedef enum checker_case
+{
+    EQUAL =  0,
+    MORE =    1,
+    LESS =  -1
+}   checker_case;
+
 vova_bebrin size_of_file(FILE* file_onegin);
+void_sex    str_swap(char** str1, char** str2);
+int         str_cmp(const char* str1, const char* str2);
 int         str_sort(vova_bebrin quantity, const char* onegin[]);
 vova_bebrin bubble_sort(vova_bebrin quantity,  char** ptr_buffer);
 vova_bebrin number_of_strings(char* buffer_onegin, vova_bebrin len_onegin);
@@ -42,7 +52,6 @@ int main(int argc, char* argv[]) {
     }
 
     read_from_file(buffer_onegin, onegin_size, file_onegin);
-
     if (fclose(file_onegin) == EOF){
         fprintf(stderr, "Error: the file %s cannot be closed. \n ", argv_file);
         return EXIT_FAILURE;
@@ -59,7 +68,8 @@ int main(int argc, char* argv[]) {
     ptr_buffer(onegin_size, buffer_onegin, ptr_array);
 
     bubble_sort(number_of_strs, ptr_array);
-    FILE*  file_sorted_onegin = fopen(argv_sorted_file, "w");
+
+    FILE* file_sorted_onegin = fopen(argv_sorted_file, "w");
     if (file_sorted_onegin == NULL) {
         fprintf(stderr, "Error: file_sorted_onegin cannot be opened. \n");
         return EXIT_FAILURE;
@@ -67,7 +77,7 @@ int main(int argc, char* argv[]) {
 
     print(number_of_strs, ptr_array, file_sorted_onegin);
 
-
+    fclose(file_sorted_onegin);
     free(ptr_array);
     free(buffer_onegin);
 }
@@ -85,13 +95,8 @@ vova_bebrin bubble_sort(vova_bebrin quantity,  char** ptr_buffer) {
 
     for (vova_bebrin i = 0; i < quantity - 1; i++) {
         for (vova_bebrin j = 0; j < quantity - i - 1; j++) {
-            // fprintf(stderr, "j: %lu ptr_buffer[j]: %p ptr_buffer[j + 1]: %p\n", j, ptr_buffer[j], ptr_buffer[j + 1]);
-            //if (strlen(ptr_buffer[j]) > strlen(ptr_buffer[j + 1]))
-
-            if (strcmp(ptr_buffer[j], ptr_buffer[j+1]) > 0) {
-                char* min_ptr = ptr_buffer[j];
-                                ptr_buffer[j] = ptr_buffer[j + 1];
-                                                ptr_buffer[j + 1] = min_ptr;
+            if (/*fprintf(stderr, "index: %lu\n", j),*/ str_cmp(ptr_buffer[j], ptr_buffer[j + 1]) > 0) {
+                str_swap(&ptr_buffer[j], &ptr_buffer[j + 1]);
                 counter++;
             }
         }
@@ -150,13 +155,14 @@ vova_bebrin number_of_strings(char* buffer_onegin, vova_bebrin len_onegin) {
 
     vova_bebrin counter = 0;
     for (vova_bebrin i = 1; i < len_onegin; i++) {
-        if (buffer_onegin[i] == '\n') {
-            buffer_onegin[i] = '\0';
-            if (buffer_onegin[i - 1] == '\r') {
-                buffer_onegin[i - 1] = '\0';
+        #ifdef __linux__
+            if (buffer_onegin[i] == '\n') {
+                buffer_onegin[i] = '\0';
+                counter++;
             }
-            counter++;
-        }
+        #else // windows
+            #error "fuck windows"
+        #endif // __linux__ windows
     }
 
     return counter;
@@ -168,17 +174,16 @@ void_sex ptr_buffer(vova_bebrin onegin_size, char* buffer_onegin, char** ptr_arr
     int counter = 0;
     for (vova_bebrin i = 0; i < onegin_size - 2; i++)
     {
-        if (buffer_onegin[i] == '\0'){
-            // fprintf(stderr, "ptr found, counter: %d\n", counter);
-            if (buffer_onegin[i+1] == '\0'){
-                ptr_array[counter] = &buffer_onegin[i+2];
+        #ifdef __linux__
+            if (buffer_onegin[i] == '\0') {
+                ptr_array[counter]
+                    = &buffer_onegin[i+1];
+                counter++;
             }
-            else{
-                ptr_array[counter] = &buffer_onegin[i+1];
-            }
-            counter++;
-        }
-    }
+        #else //windows
+            #error "fuck windows"
+        #endif // __linux__ windows
+   }
 }
 
 //------------------------------------ BUFFER -----------------------------------------
@@ -198,10 +203,71 @@ vova_bebrin read_from_file(char* buffer_onegin, size_t onegin_size, FILE* file_o
 //------------------------------------- PRINT -----------------------------------------
 
 void_sex print(vova_bebrin number_of_strs, char** ptr_array, FILE* file_sorted_onegin) {
+    assert(ptr_array != NULL);
+    assert(file_sorted_onegin != NULL);
+
     for (vova_bebrin k = 0; k < number_of_strs; k++) {
         fprintf(file_sorted_onegin, "%s\n", ptr_array[k]);
     }
 }
 
 //------------------------------------ STRCMP -----------------------------------------
+/*
+vova_bebrin str_cmp(char* str1, char* str2) {
+
+    int str1_index = 0;
+    int str2_index = 0;
+
+    vova_bebrin checker = 0;
+
+    while ((checker == EQUAL) && (str1[str1_index] != '\0') && (str2[str2_index] != '\0')){
+        while (isalpha(str1[str1_index]) == 0) {
+            str1_index++;
+        }
+        while (isalpha(str2[str2_index]) == 0) {
+            str2_index++;
+        }
+        if (tolower(str1[str1_index]) > tolower(str2[str2_index])) {
+            str_swap(&str1, &str2);
+            checker = MORE;
+            return checker;
+        }
+        else if (tolower(str1[str1_index]) < tolower(str2[str2_index])) {
+            checker = LESS;
+            return checker;
+        }
+        else {
+            checker = EQUAL;
+            str1_index++;
+            str2_index++;
+            return  checker;
+        }
+    }ё
+}
+*/
+
+int str_cmp(const char* str1, const char* str2) {
+    assert(str1 != NULL);
+    printf("bebra");
+    assert(str2 != NULL);
+
+    for (int i = 0; ((str1[i] != '\0') && (str2[i] != '\0')); i++) {
+        if (tolower(str1[i]) != tolower(str2[i])) {
+            return (int)str1[i] - (int)str2[i];
+        }
+    }
+
+    return 0;
+}
+
+//------------------------------------- SWAP -----------------------------------------
+
+void_sex str_swap(char** str1, char** str2) {
+    assert(str1 != NULL);
+    assert(str2 != NULL);
+
+    char* tmp_str = *str1;
+                    *str1 = *str2;
+                            *str2 = tmp_str;
+}
 
