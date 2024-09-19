@@ -5,26 +5,36 @@
 #include <string.h>
 #include <search.h>
 
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+//сделать массив из функций strcmp straight + reverse
+//чтобы функция бубле сорт (в дальнейшем в идеале кусорт) в качестве еще одного аргумента запрашивала указатель на элоемент массива функций т.е. укащатель на функцию
+//сама подставляла его в момент где нужен стркмп и как итог дважды одним вызовом все делала
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 typedef void      void_sex;
 typedef size_t vova_bebrin;
 
-typedef enum checker_case
-{
-    EQUAL =  0,
-    MORE =    1,
-    LESS =  -1
+typedef enum checker_case {
+    EQUAL =          0,
+    MORE =           1,
+    LESS =          -1,
+    ERROR_NULL_PTR = 2
 }   checker_case;
 
-vova_bebrin size_of_file(FILE* file_onegin);
-void_sex    str_swap(char** str1, char** str2);
-int         str_cmp(const char* str1, const char* str2);
-int         str_sort(vova_bebrin quantity, const char* onegin[]);
-vova_bebrin bubble_sort(vova_bebrin quantity,  char** ptr_buffer);
-vova_bebrin number_of_strings(char* buffer_onegin, vova_bebrin len_onegin);
-// void_sex    append(char** buffer_onegin, vova_bebrin* ar_length, char new_elem);
-void_sex    ptr_buffer(vova_bebrin onegin_size, char* buffer_onegin, char** ptr_array);
+typedef struct poltorashka {
+    char** start_ptr_array;
+    char**   end_ptr_array;
+}   poltorashka;
+
+void_sex    ptr_buffer(vova_bebrin onegin_size, char* buffer_onegin, char** start_ptr_array, char** end_ptr_array);
+void_sex    print(vova_bebrin number_of_strs, char** start_ptr_array, FILE* file_sorted_onegin);
 vova_bebrin read_from_file(char* buffer_onegin, size_t onegin_size, FILE* file_onegin);
-void_sex    print(vova_bebrin number_of_strs, char** ptr_array, FILE* file_sorted_onegin);
+vova_bebrin number_of_strings(char* buffer_onegin, vova_bebrin len_onegin);
+vova_bebrin straight_sort(vova_bebrin quantity,  char** ptr_buffer);
+int         str_sort(vova_bebrin quantity, const char* onegin[]);
+int         str_cmp(const char* str1, const char* str2);
+void_sex    str_swap(char** str1, char** str2);
+vova_bebrin size_of_file(FILE* file_onegin);
 
 //===================================== MAIN ========================================
 
@@ -59,15 +69,25 @@ int main(int argc, char* argv[]) {
 
     vova_bebrin number_of_strs = number_of_strings(buffer_onegin, onegin_size);
 
-    char** ptr_array = (char**)calloc(number_of_strs, sizeof(char*));
-    if (ptr_array == NULL) {
-        fprintf(stderr, "Error: ptr_array cannot be alocated.\n");
+    char** start_ptr_array = (char**)calloc(number_of_strs + 1, sizeof(char*));
+    if (start_ptr_array == NULL) {
+        fprintf(stderr, "Error: start_ptr_array cannot be alocated.\n");
         return EXIT_FAILURE;
     }
 
-    ptr_buffer(onegin_size, buffer_onegin, ptr_array);
+    char**   end_ptr_array = (char**)calloc(number_of_strs + 1, sizeof(char*));
+    if (start_ptr_array == NULL) {
+        fprintf(stderr,    "Error: end_ptr_array cannot be alocated.\n");
+        return EXIT_FAILURE;
+    }
 
-    bubble_sort(number_of_strs, ptr_array);
+    struct poltorashka ptr_struct = { start_ptr_array,
+                                      end_ptr_array    };
+    assert(ptr_struct != NULL);
+
+    ptr_buffer(onegin_size, buffer_onegin, start_ptr_array, end_ptr_array);
+
+    straight_sort(number_of_strs, start_ptr_array);
 
     FILE* file_sorted_onegin = fopen(argv_sorted_file, "w");
     if (file_sorted_onegin == NULL) {
@@ -75,10 +95,10 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
-    print(number_of_strs, ptr_array, file_sorted_onegin);
+    print(number_of_strs, start_ptr_array, file_sorted_onegin);
 
     fclose(file_sorted_onegin);
-    free(ptr_array);
+    free(start_ptr_array);
     free(buffer_onegin);
 }
 
@@ -87,8 +107,7 @@ int main(int argc, char* argv[]) {
 
 //------------------------------------ BUBBLE SORT -----------------------------------------
 
-
-vova_bebrin bubble_sort(vova_bebrin quantity,  char** ptr_buffer) {
+vova_bebrin straight_sort(vova_bebrin quantity,  char** ptr_buffer) {
     assert(ptr_buffer != NULL);
 
     vova_bebrin counter = 0;
@@ -105,9 +124,7 @@ vova_bebrin bubble_sort(vova_bebrin quantity,  char** ptr_buffer) {
     return counter;
 }
 
-
 //------------------------------------ LENGTH SORT -----------------------------------------
-
 
 int str_sort(vova_bebrin quantity, const char* onegin[]) {
     int counter_v2 = 0;
@@ -125,16 +142,6 @@ int str_sort(vova_bebrin quantity, const char* onegin[]) {
     }
     return counter_v2;
 }
-
-
-//----------------------------------- APPEND ------------------------------------------
-
-
-// void_sex append(char** buffer_onegin, vova_bebrin* ar_length, char new_elem) {
-//     *buffer_onegin = (char*) realloc(*buffer_onegin, 1 + *ar_length);
-//     (*buffer_onegin)[*ar_length] = new_elem;
-//  s   *ar_length += 1;
-// }
 
 //------------------------- FUNC TO CALC SIZE OF A FILE -------------------------------
 
@@ -168,16 +175,18 @@ vova_bebrin number_of_strings(char* buffer_onegin, vova_bebrin len_onegin) {
     return counter;
 }
 
-//--------------------------- FUNC TO FILL PTR BUFFER ---------------------------------
+//---------------------------- FUNC TO FILL PTR BUFFER --------------------------------
 
-void_sex ptr_buffer(vova_bebrin onegin_size, char* buffer_onegin, char** ptr_array) {
+void_sex ptr_buffer(vova_bebrin onegin_size, char* buffer_onegin, char** start_ptr_array, char** end_ptr_array) {
     int counter = 0;
-    for (vova_bebrin i = 0; i < onegin_size - 2; i++)
+    for (vova_bebrin i = 0; i < onegin_size; i++)
     {
         #ifdef __linux__
             if (buffer_onegin[i] == '\0') {
-                ptr_array[counter]
-                    = &buffer_onegin[i+1];
+                start_ptr_array[counter]
+                    = &buffer_onegin[i + 1];
+                end_ptr_array[counter]
+                    = &buffer_onegin[i];
                 counter++;
             }
         #else //windows
@@ -189,7 +198,7 @@ void_sex ptr_buffer(vova_bebrin onegin_size, char* buffer_onegin, char** ptr_arr
 //------------------------------------ BUFFER -----------------------------------------
 
 vova_bebrin read_from_file(char* buffer_onegin, size_t onegin_size, FILE* file_onegin) {
-    assert(file_onegin != NULL);
+    assert(file_onegin   != NULL);
     assert(buffer_onegin != NULL);
 
     vova_bebrin fread_readed = fread(buffer_onegin,
@@ -202,59 +211,33 @@ vova_bebrin read_from_file(char* buffer_onegin, size_t onegin_size, FILE* file_o
 
 //------------------------------------- PRINT -----------------------------------------
 
-void_sex print(vova_bebrin number_of_strs, char** ptr_array, FILE* file_sorted_onegin) {
-    assert(ptr_array != NULL);
+void_sex print(vova_bebrin number_of_strs, char** start_ptr_array, FILE* file_sorted_onegin) {
+    assert(start_ptr_array    != NULL);
     assert(file_sorted_onegin != NULL);
 
     for (vova_bebrin k = 0; k < number_of_strs; k++) {
-        fprintf(file_sorted_onegin, "%s\n", ptr_array[k]);
+        fprintf(file_sorted_onegin, "%s\n", start_ptr_array[k]);
     }
 }
 
 //------------------------------------ STRCMP -----------------------------------------
-/*
-vova_bebrin str_cmp(char* str1, char* str2) {
+
+int str_cmp(const char* str1, const char* str2) {
+    assert(str1 != NULL);
+    assert(str2 != NULL);
 
     int str1_index = 0;
     int str2_index = 0;
 
-    vova_bebrin checker = 0;
-
-    while ((checker == EQUAL) && (str1[str1_index] != '\0') && (str2[str2_index] != '\0')){
-        while (isalpha(str1[str1_index]) == 0) {
-            str1_index++;
+    while ((str1[str1_index] != '\0') && (str2[str2_index] != '\0')) {
+        if (tolower(str1[str1_index]) != tolower(str2[str2_index])) {
+            return  (int)str1[str1_index] - (int)str2[str2_index];
         }
-        while (isalpha(str2[str2_index]) == 0) {
-            str2_index++;
-        }
-        if (tolower(str1[str1_index]) > tolower(str2[str2_index])) {
-            str_swap(&str1, &str2);
-            checker = MORE;
-            return checker;
-        }
-        else if (tolower(str1[str1_index]) < tolower(str2[str2_index])) {
-            checker = LESS;
-            return checker;
-        }
-        else {
-            checker = EQUAL;
-            str1_index++;
-            str2_index++;
-            return  checker;
-        }
-    }ё
-}
-*/
-
-int str_cmp(const char* str1, const char* str2) {
-    assert(str1 != NULL);
-    printf("bebra");
-    assert(str2 != NULL);
-
-    for (int i = 0; ((str1[i] != '\0') && (str2[i] != '\0')); i++) {
-        if (tolower(str1[i]) != tolower(str2[i])) {
-            return (int)str1[i] - (int)str2[i];
-        }
+        str1_index++;
+        str2_index++;
+    }
+    if (strlen(str1) != strlen(str2)) {
+        return strlen(str1) - strlen(str2);
     }
 
     return 0;
@@ -271,3 +254,33 @@ void_sex str_swap(char** str1, char** str2) {
                             *str2 = tmp_str;
 }
 
+//--------------------------------- REVERSE STRCMP ------------------------------------
+
+int reverse_str_cmp(struct poltorashka ptr_struct, int i) {
+
+    assert(ptr_struct.end_ptr_array[i]       != NULL);
+    assert(ptr_struct.end_ptr_array[i + 1]   != NULL);
+    assert(ptr_struct.start_ptr_array[i]     != NULL);
+    assert(ptr_struct.start_ptr_array[i + 1] != NULL);
+
+    char* str1_ind_end =         ptr_struct.end_ptr_array[i];
+    char* str2_ind_end =     ptr_struct.end_ptr_array[i + 1];
+    char* str1_ind_start =     ptr_struct.start_ptr_array[i];
+    char* str2_ind_start = ptr_struct.start_ptr_array[i + 1];
+
+    int len_str1 = str1_ind_end - str1_ind_start;
+    int len_str2 = str2_ind_end - str2_ind_start;
+
+    while ((len_str1 != 0) && (len_str2 != 0)) {
+        if (tolower(str1_ind_start[len_str1]) != tolower(str2_ind_start[len_str2])) {
+            return  (int)str1_ind_start[len_str1] - (int)str2_ind_start[len_str2];
+        }
+        len_str1--;
+        len_str2--;
+    }
+    if (strlen(str1_ind_start) != strlen(str2_ind_start)) {
+        return strlen(str1_ind_start) - strlen(str2_ind_start);
+    }
+
+    return 0;
+}
