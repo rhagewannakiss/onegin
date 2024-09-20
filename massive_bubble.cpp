@@ -11,6 +11,9 @@
 //сама подставляла его в момент где нужен стркмп и как итог дважды одним вызовом все делала
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+typedef int (*func_ptr)(int, int);
+
+
 typedef void      void_sex;
 typedef size_t vova_bebrin;
 
@@ -31,6 +34,7 @@ void_sex    print(vova_bebrin number_of_strs, char** start_ptr_array, FILE* file
 vova_bebrin read_from_file(char* buffer_onegin, size_t onegin_size, FILE* file_onegin);
 vova_bebrin number_of_strings(char* buffer_onegin, vova_bebrin len_onegin);
 vova_bebrin straight_sort(vova_bebrin quantity,  char** ptr_buffer);
+int         reverse_str_cmp(struct poltorashka ptr_struct, int i);
 int         str_sort(vova_bebrin quantity, const char* onegin[]);
 int         str_cmp(const char* str1, const char* str2);
 void_sex    str_swap(char** str1, char** str2);
@@ -83,7 +87,8 @@ int main(int argc, char* argv[]) {
 
     struct poltorashka ptr_struct = { start_ptr_array,
                                       end_ptr_array    };
-    assert(ptr_struct != NULL);
+    assert(ptr_struct.start_ptr_array != NULL);
+    assert(ptr_struct.end_ptr_array   != NULL);
 
     ptr_buffer(onegin_size, buffer_onegin, start_ptr_array, end_ptr_array);
 
@@ -268,8 +273,8 @@ int reverse_str_cmp(struct poltorashka ptr_struct, int i) {
     char* str1_ind_start =     ptr_struct.start_ptr_array[i];
     char* str2_ind_start = ptr_struct.start_ptr_array[i + 1];
 
-    int len_str1 = str1_ind_end - str1_ind_start;
-    int len_str2 = str2_ind_end - str2_ind_start;
+    long int len_str1 = str1_ind_end - str1_ind_start;
+    long int len_str2 = str2_ind_end - str2_ind_start;
 
     while ((len_str1 != 0) && (len_str2 != 0)) {
         if (tolower(str1_ind_start[len_str1]) != tolower(str2_ind_start[len_str2])) {
